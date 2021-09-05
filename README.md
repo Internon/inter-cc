@@ -1,4 +1,5 @@
 # Powershell HTTP/S Reverse Shell
+This repository came from 3v4si0n HTTP-Revshell repository after making some changes. I will make a pull request on his github but meanwhile I will use this one
 
 [![Category-tool]]() [![Powershell]]() [![Python]]() [![License]]()
 
@@ -21,6 +22,7 @@ optional arguments:
   -h, --help      show this help message and exit
   --ssl           Send traffic over ssl
   --autocomplete  Autocomplete powershell functions
+  --bypass	  Bypass IP whitelist
 ```
 
 ## Help Invoke-WebRev.ps1 (client)
