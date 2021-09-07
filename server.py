@@ -374,6 +374,7 @@ def interactagents(action):
         else:
             agent = agents[action.split(" ")[1]]
     if notagent == False:
+        firsttime=True
         while True:
             try:
                 if background == True:
