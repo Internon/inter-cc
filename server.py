@@ -377,10 +377,11 @@ def interactagents(action):
                 if not agent == "":
                     agentdate = agentsdate[agent]
                     check = current_date-agentdate
-                    if check > datetime.timedelta(minutes=1):
+                    if check > datetime.timedelta(minutes=5):
                         print("")
                         print(Color.F_Red + "Agent disconnected" + Color.reset)
                         print("")
+                        agent = ""
                         break
             except KeyboardInterrupt:
                 break
