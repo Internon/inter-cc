@@ -16,6 +16,7 @@ agent = ""
 background = False
 supercommand = ""
 agentsid = 0
+inputcontrol = False
 class myHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass
@@ -207,7 +208,10 @@ class myHandler(BaseHTTPRequestHandler):
             globals.AUTOCOMPLETE = False
         elif pwd != "":
             #readline.parse_and_bind("tab: complete")
+            global inputcontrol
+            inputcontrol = True
             command = input(Color.F_Red+ "{}@{}".format(user,hostname) + Color.reset + Color.F_Blue + " PS {}> ".format(pwd) + Color.reset)
+            inputcontrol = False
             if command == "bg" or command == "exit":
                 global background
                 background = True
@@ -252,7 +256,7 @@ def listagents():
     for agentid, userhost in agents.items():
         agentdate = agentsdate[userhost]
         check = current_date-agentdate
-        if check > datetime.timedelta(minutes=1):
+        if check > datetime.timedelta(minutes=2):
             status = "Disconnected"
             Colorprint = Color.F_Red
         else:
@@ -350,6 +354,7 @@ def disconnectagents(action):
                 agent = agents[action.split(" ")[1]]
     time.sleep(2)
     cleanagents(action)
+
 def interactagents(action):
     global agent
     notagent = False
@@ -377,12 +382,15 @@ def interactagents(action):
                 if not agent == "":
                     agentdate = agentsdate[agent]
                     check = current_date-agentdate
-                    if check > datetime.timedelta(minutes=5):
+                    if check > datetime.timedelta(minutes=2):
                         print("")
                         print(Color.F_Red + "Agent disconnected" + Color.reset)
                         print("")
-                        agent = ""
-                        break
+                        if inputcontrol == True:
+                            pass
+                        else:
+                            agent = ""
+                            break
             except KeyboardInterrupt:
                 break
 
