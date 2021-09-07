@@ -383,15 +383,18 @@ def interactagents(action):
                     agentdate = agentsdate[agent]
                     check = current_date-agentdate
                     if check > datetime.timedelta(minutes=2):
-                        print("")
-                        print(Color.F_Red + "Agent disconnected" + Color.reset)
-                        print("")
-                        if inputcontrol == True:
-                            pass
+                        if firsttime == True:
+                            firsttime = False
+                            print("")
+                            print(Color.F_Red + "Agent disconnected or elapsed more than 2 minutes" + Color.reset)
+                            print(Color.F_Red + "Press any key to check if you still have the agent if not press Control + C" + Color.reset)
+                            print("")
                         else:
-                            agent = ""
-                            break
+                            pass
+                    else:
+                        firsttime = True
             except KeyboardInterrupt:
+                agent = ""
                 break
 
 def printmenu():
