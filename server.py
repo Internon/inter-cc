@@ -256,7 +256,7 @@ def listagents():
     for agentid, userhost in agents.items():
         agentdate = agentsdate[userhost]
         check = current_date-agentdate
-        if check > datetime.timedelta(minutes=2):
+        if check > datetime.timedelta(minutes=1):
             status = "Disconnected"
             Colorprint = Color.F_Red
         else:
